@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>WILDWOOD: SURVIVAL</title>
+<style>
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#1d3a24;font-family:system-ui,sans-serif;touch-action:none}
+canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 4px #000a}
+#top{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+#hp{width:min(220px,45vw);height:20px;border:3px solid #fff;border-radius:12px;background:#0006;overflow:hidden}
+#hpf{height:100%;width:100%;background:linear-gradient(#ff6b6b,#d62828);transition:width .2s}
+#clock{font-weight:700;font-size:15px;text-align:right}
+#inv{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.slot{width:58px;height:58px;border:3px solid #fff;border-radius:12px;background:#0007;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;line-height:1}
+.slot b{font-size:13px;margin-top:2px}.slot.on{border-color:#ffd23f}
+#msg{position:absolute;top:22%;width:100%;text-align:center;font-size:20px;font-weight:700;opacity:0;transition:opacity .3s}
+#flash{position:absolute;inset:0;background:radial-gradient(transparent 40%,#e00a);opacity:0;transition:opacity .25s}
+#night{position:absolute;top:44px;left:12px;font-size:13px}
+.ov{position:fixed;inset:0;background:#0b1d12e6;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;z-index:5}
+.ov h1{font-size:clamp(30px,7vw,56px);margin:0 0 6px;color:#ffd23f;text-shadow:0 4px 0 #b5651d}
+.ov p{max-width:520px;line-height:1.5;margin:6px 0}
+.ov button{margin-top:14px;font-size:22px;font-weight:800;padding:12px 34px;border:0;border-radius:30px;background:#ffd23f;color:#4a2a00;cursor:pointer;box-shadow:0 5px 0 #b5651d}
+#touch{display:none}
+.t #touch{display:block}
+#joy{position:fixed;left:calc(22px + env(safe-area-inset-left,0px));bottom:calc(90px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:50%;background:#fff3;border:3px solid #fff8;touch-action:none;z-index:3}
+#knob{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:#fffc}
+.tb{position:fixed;width:74px;height:74px;border-radius:50%;border:3px solid #fff;background:#0007;color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;z-index:3;touch-action:none}
+#bHit{right:22px;bottom:calc(110px + env(safe-area-inset-bottom,0px));background:#d62828aa}
+#bRun{right:112px;bottom:calc(90px + env(safe-area-inset-bottom,0px));width:62px;height:62px;font-size:22px}
+#bEat{right:30px;bottom:calc(200px + env(safe-area-inset-bottom,0px));width:60px;height:60px;font-size:26px}
+.ov button.sup{font-size:16px;padding:9px 22px;background:#ff5d8f;color:#fff;box-shadow:0 4px 0 #b02a5a;margin-top:12px}
+.cards{display:flex;gap:12px;justify-content:center;margin:14px 0;align-items:center}
+.visa{background:#fff;color:#1a1f71;font:italic 900 22px system-ui;padding:6px 14px;border-radius:8px;letter-spacing:1px}
+.mc{background:#fff;border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:0;font:700 12px system-ui;color:#222}
+.mc i{width:22px;height:22px;border-radius:50%;background:#eb001b;display:inline-block}.mc i+i{background:#f79e1b;margin-left:-9px;opacity:.9}.mc span{margin-left:8px}
+.ov a.pay{display:inline-block;margin-top:6px;font-size:20px;font-weight:800;padding:12px 30px;border-radius:30px;background:#ffd23f;color:#4a2a00;text-decoration:none;box-shadow:0 5px 0 #b5651d}
+</style></head><body>
+<div id="hud">
+ <div id="top"><div id="hp"><div id="hpf"></div></div><div id="clock"></div></div>
+ <div id="night"></div><div id="msg"></div><div id="flash"></div>
+ <div id="inv"><div class="slot on">🪓<b>1</b></div><div class="slot">🪵<b id="nW">0</b></div><div class="slot">🥩<b id="nM">0</b></div></div>
+</div>
+<div id="touch"><div id="joy"><div id="knob"></div></div><div class="tb" id="bHit">🪓</div><div class="tb" id="bRun">⚡</div><div class="tb" id="bEat">🥩</div></div>
+<div class="ov" id="start"><h1>WILDWOOD: SURVIVAL 🏕️</h1>
+<p>Руби деревья 🌲, собирай древесину 🪵. Каждые 5 минут наступает ночь — приходят волки 🐺. Бей их топором и добывай мясо 🥩 (клавиша E — съесть и вылечиться).</p>
+<p><b>W/S</b> — вперёд/назад · <b>A/D</b> — поворот · <b>Shift</b> — бег<br><b>Мышь</b> — осмотр · <b>ЛКМ / Пробел</b> — удар · <b>E</b> — есть<br>На телефоне: джойстик слева, кнопки справа, камера — свайп.</p>
+<button id="play">Играть</button></div>
+<div class="ov" id="dead" style="display:none"><h1>Вы погибли 💀</h1><p id="stat"></p><button onclick="location.reload()">Заново</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const touch='ontouchstart' in window||navigator.maxTouchPoints>0;
+if(touch)document.documentElement.classList.add('t');
+const R=Math.random, rr=(a,b)=>a+R()*(b-a);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+document.body.prepend(renderer.domElement);
+const scene=new THREE.Scene();scene.fog=new THREE.Fog(0x9fd8ff,25,95);
+const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,200);
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()});
+const hemi=new THREE.HemisphereLight(0xffffff,0x5a8f3a,.8);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xfff2cc,.9);sun.position.set(30,50,20);sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);const sc=sun.shadow.camera;sc.left=sc.bottom=-35;sc.right=sc.top=35;sc.far=140;
+scene.add(sun,sun.target);
+const M=(c,o={})=>new THREE.MeshLambertMaterial(Object.assign({color:c},o));
+const mesh=(g,m,x=0,y=0,z=0,sh=true)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);o.castShadow=sh;return o};
+// ground
+const WORLD=95;
+const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),M(0x6cc24a));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const clear=new THREE.Mesh(new THREE.CircleGeometry(11,40),M(0x8ee06a));clear.rotation.x=-Math.PI/2;clear.position.y=.02;clear.receiveShadow=true;scene.add(clear);
+// flowers & rocks
+const fg=new THREE.SphereGeometry(.16,6,5),fm=[0xff5d8f,0xffd23f,0xffffff,0xb388ff].map(c=>M(c));
+for(let i=0;i<260;i++){const a=R()*6.28,d=R()*WORLD;const f=mesh(fg,fm[i%4],Math.cos(a)*d,.18,Math.sin(a)*d,false);scene.add(f)}
+const rg=new THREE.DodecahedronGeometry(1,0),rm=M(0x9aa0a6);
+for(let i=0;i<30;i++){const a=R()*6.28,d=14+R()*80,r=rr(.5,1.2);const o=mesh(rg,rm,Math.cos(a)*d,r*.4,Math.sin(a)*d);o.scale.set(r,r*.6,r);o.rotation.y=R()*3;scene.add(o)}
+// clouds
+const clouds=[];const cm=M(0xffffff,{transparent:true,opacity:.9});
+for(let i=0;i<10;i++){const g=new THREE.Group();for(let j=0;j<4;j++){const s=mesh(new THREE.SphereGeometry(rr(3,5),8,6),cm,j*4,rr(-.5,.5),rr(-1,1),false);g.add(s)}
+g.position.set(rr(-90,90),rr(35,50),rr(-90,90));scene.add(g);clouds.push(g)}
+// trees
+const trees=[];
+const trG=new THREE.CylinderGeometry(.35,.5,2.4,8),trM=M(0x8b5a2b);
+const leafG=[new THREE.ConeGeometry(2.1,2.6,9),new THREE.ConeGeometry(1.7,2.3,9),new THREE.ConeGeometry(1.2,2,9)];
+const leafM=[M(0x2e9e4a),M(0x37b657),M(0x45cf65)];
+const roundG=new THREE.IcosahedronGeometry(1.9,1);
+function makeTree(x,z){
+ const g=new THREE.Group();g.position.set(x,0,z);
+ g.add(mesh(trG,trM,0,1.2,0));
+ if(R()<.65){leafG.forEach((lg,i)=>g.add(mesh(lg,leafM[i],0,2.9+i*1.5,0)))}
+ else{g.add(mesh(roundG,leafM[1],0,3.7,0));const c2=mesh(roundG,leafM[2],.9,3,.4);c2.scale.setScalar(.6);g.add(c2)}
+ const s=rr(.85,1.3);g.scale.setScalar(s);g.rotation.y=R()*6;scene.add(g);
+ trees.push({g,x,z,s,hp:3,alive:true,shake:0,fall:0,back:0});
+}
+for(let i=0;i<150;i++){const a=R()*6.28,d=13+Math.sqrt(R())*(WORLD-14);makeTree(Math.cos(a)*d,Math.sin(a)*d)}
+// character
+function box(w,h,d,c,px=0,py=0,pz=0){const g=new THREE.BoxGeometry(w,h,d);g.translate(px,py,pz);return mesh(g,M(c))}
+function makeHuman(){
+ const g=new THREE.Group();
+ const body=box(.8,.9,.45,0xe63946,0,1.55,0);g.add(body);
+ const head=mesh(new THREE.SphereGeometry(.42,14,12),M(0xffcf9f),0,2.4,0);g.add(head);
+ const hat=mesh(new THREE.CylinderGeometry(.3,.46,.35,12),M(0x2a6f97),0,2.78,0);g.add(hat);
+ [-.15,.15].forEach(x=>g.add(mesh(new THREE.SphereGeometry(.06,6,6),M(0x222222),x,2.43,.38,false)));
+ const mk=(x,h,c)=>{const p=new THREE.Group();p.position.set(x,h,0);p.add(box(.3,.9,.3,c,0,-.45,0));g.add(p);return p};
+ const lL=mk(-.2,.95,0x264653),lR=mk(.2,.95,0x264653),aL=mk(-.55,1.95,0xe63946),aR=mk(.55,1.95,0xe63946);
+ const axe=new THREE.Group();axe.position.set(0,-.9,.1);
+ axe.add(mesh(new THREE.CylinderGeometry(.05,.05,1.1,6),M(0x7a4a1e),0,.3,0));
+ axe.add(box(.12,.4,.55,0xcfd8dc,0,.7,.2));aR.add(axe);axe.rotation.x=Math.PI/2.4;
+ g.userData={lL,lR,aL,aR};return g;
+}
+function makeWolf(){
+ const g=new THREE.Group(),c=0x7d8590,d=0x5a626b;
+ g.add(box(.8,.75,1.5,c,0,1,0));
+ const h=new THREE.Group();h.position.set(0,1.25,.85);h.add(box(.6,.6,.6,c));h.add(box(.34,.3,.4,d,0,-.1,.45));
+ h.add(box(.16,.3,.12,d,-.2,.4,-.05));h.add(box(.16,.3,.12,d,.2,.4,-.05));
+ h.add(mesh(new THREE.SphereGeometry(.07,6,6),M(0xff2222),-.15,.1,.3,false));h.add(mesh(new THREE.SphereGeometry(.07,6,6),M(0xff2222),.15,.1,.3,false));
+ g.add(h);
+ const tail=box(.2,.2,.7,d,0,1.2,-.9);tail.rotation.x=.6;g.add(tail);
+ const legs=[[-.28,.6],[.28,.6],[-.28,-.55],[.28,-.55]].map(([x,z])=>{const p=new THREE.Group();p.position.set(x,.7,z);p.add(box(.22,.7,.22,d,0,-.35,0));g.add(p);return p});
+ g.userData={legs};return g;
+}
+const P={pos:new THREE.Vector3(0,0,0),rot:0,hp:100,ph:0,atk:-1,hit:false,wood:0,meat:0,kills:0};
+const hero=makeHuman();scene.add(hero);
+let camOff=0,camPitch=.45;
+// input
+const K={};const T={fwd:0,turn:0,run:false,hit:false};
+addEventListener('keydown',e=>{K[e.code]=true;if(e.code==='Space'){e.preventDefault();swing()}if(e.code==='KeyE')eat()});
+addEventListener('keyup',e=>K[e.code]=false);
+let started=false,locked=false;
+document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
+document.addEventListener('mousemove',e=>{if(!locked)return;camOff-=e.movementX*.003;camPitch=Math.max(.08,Math.min(1.2,camPitch+e.movementY*.003))});
+renderer.domElement.addEventListener('mousedown',e=>{if(e.button===0){if(!locked&&started&&!touch)renderer.domElement.requestPointerLock();else swing()}});
+$('play').onclick=()=>{$('start').style.display='none';started=true;if(!touch)renderer.domElement.requestPointerLock()};
+// touch
+const joy=$('joy'),knob=$('knob');let jid=null,lid=null,lx=0,ly=0;
+function jmove(t){const r=joy.getBoundingClientRect(),cx=r.left+65,cy=r.top+65;let dx=t.clientX-cx,dy=t.clientY-cy;const m=Math.hypot(dx,dy),L=55;if(m>L){dx*=L/m;dy*=L/m}
+ knob.style.left=40+dx+'px';knob.style.top=40+dy+'px';T.turn=-dx/L;T.fwd=-dy/L;if(Math.abs(T.turn)<.15)T.turn=0;if(Math.abs(T.fwd)<.15)T.fwd=0}
+joy.addEventListener('touchstart',e=>{e.preventDefault();jid=e.changedTouches[0].identifier;jmove(e.changedTouches[0])},{passive:false});
+function jend(){jid=null;T.turn=T.fwd=0;knob.style.left=knob.style.top='40px'}
+addEventListener('touchmove',e=>{for(const t of e.changedTouches){if(t.identifier===jid){e.preventDefault();jmove(t)}else if(t.identifier===lid){camOff-=(t.clientX-lx)*.006;camPitch=Math.max(.08,Math.min(1.2,camPitch+(t.clientY-ly)*.005));lx=t.clientX;ly=t.clientY}}},{passive:false});
+addEventListener('touchend',e=>{for(const t of e.changedTouches){if(t.identifier===jid)jend();if(t.identifier===lid)lid=null}});
+renderer.domElement.addEventListener('touchstart',e=>{const t=e.changedTouches[0];if(lid===null){lid=t.identifier;lx=t.clientX;ly=t.clientY}},{passive:true});
+const hold=(id,on,off)=>{const b=$(id);b.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();on()},{passive:false});b.addEventListener('touchend',e=>{e.preventDefault();off&&off()},{passive:false})};
+hold('bHit',swing);hold('bEat',eat);hold('bRun',()=>{T.run=true;$('bRun').style.background='#ffd23faa'},()=>{T.run=false;$('bRun').style.background='#0007'});
+// ui
+let mt=0;function say(t){const m=$('msg');m.textContent=t;m.style.opacity=1;clearTimeout(mt);mt=setTimeout(()=>m.style.opacity=0,1600)}
+function ui(){$('hpf').style.width=Math.max(0,P.hp)+'%';$('nW').textContent=P.wood;$('nM').textContent=P.meat}
+function eat(){if(!started||P.hp<=0)return;if(P.meat>0&&P.hp<100){P.meat--;P.hp=Math.min(100,P.hp+25);say('Ням! +25 здоровья 🍖');ui()}else if(P.meat<=0)say('Нет мяса')}
+// combat
+const wolves=[];
+function swing(){if(!started||P.hp<=0||P.atk>=0)return;P.atk=0;P.hit=false}
+function doHit(){
+ const fx=Math.sin(P.rot),fz=Math.cos(P.rot);let best=null,bd=2.8,kind=0;
+ for(const w of wolves){const dx=w.g.position.x-P.pos.x,dz=w.g.position.z-P.pos.z,d=Math.hypot(dx,dz);if(d<bd&&(dx*fx+dz*fz)/d>.2){bd=d;best=w;kind=1}}
+ if(!best)for(const t of trees){if(!t.alive)continue;const dx=t.x-P.pos.x,dz=t.z-P.pos.z,d=Math.hypot(dx,dz)-.6;if(d<bd&&(dx*fx+dz*fz)/Math.hypot(dx,dz)>.2){bd=d;best=t;kind=2}}
+ if(!best)return;
+ if(kind===1){best.hp--;best.kb=.25;best.g.position.x+=fx*1.2;best.g.position.z+=fz*1.2;
+  if(best.hp<=0){scene.remove(best.g);wolves.splice(wolves.indexOf(best),1);P.meat+=2;P.kills++;say('Волк убит! +2 мяса 🥩')}}
+ else{best.hp--;best.shake=.3;if(best.hp<=0){best.alive=false;best.fall=.01;P.wood+=3;say('+3 древесины 🪵')}}
+ ui();
+}
+// day/night
+const DAY=300,NIGHT=60;let ct=0,dayNo=1,spawned=false;
+const cDay=new THREE.Color(0x9fd8ff),cNight=new THREE.Color(0x0a0f2c),col=new THREE.Color();
+function spawnWolves(){const n=3+Math.floor(R()*3);say('🌙 Наступила ночь! Волки близко...');
+ for(let i=0;i<n;i++){const a=R()*6.28,d=22+R()*8;const g=makeWolf();g.position.set(P.pos.x+Math.cos(a)*d,0,P.pos.z+Math.sin(a)*d);scene.add(g);wolves.push({g,hp:3,cd:1,ph:R()*6,kb:0})}}
+function updateDay(dt){
+ ct+=dt;
+ if(ct>=DAY&&!spawned){spawned=true;spawnWolves()}
+ if(ct>=DAY+NIGHT){ct=0;spawned=false;dayNo++;say('☀️ Рассвет. Волки ушли.');wolves.forEach(w=>scene.remove(w.g));wolves.length=0}
+ const dark=ct<DAY-10?0:ct<DAY?(ct-DAY+10)/10:ct<DAY+NIGHT-10?1:(DAY+NIGHT-ct)/10;
+ col.copy(cDay).lerp(cNight,dark);scene.background=col;scene.fog.color.copy(col);
+ hemi.intensity=.8-dark*.55;sun.intensity=.9-dark*.8;sun.color.setHex(dark>.5?0x8fa8ff:0xfff2cc);
+ const left=ct<DAY?Math.ceil(DAY-ct):Math.ceil(DAY+NIGHT-ct);
+ const m=Math.floor(left/60),s=String(left%60).padStart(2,'0');
+ $('clock').textContent=(ct<DAY?'☀️ День ':'🌙 Ночь ')+dayNo;
+ $('night').textContent=(ct<DAY?'До ночи: ':'До рассвета: ')+m+':'+s;
+}
+// loop
+const clock=new THREE.Clock();
+function loop(){
+ requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);
+ if(started&&P.hp>0){
+  updateDay(dt);
+  const turn=(K.KeyA?1:0)-(K.KeyD?1:0)+T.turn,fwd=(K.KeyW?1:0)-(K.KeyS?1:0)+T.fwd;
+  P.rot+=turn*2.4*dt;
+  const run=K.ShiftLeft||K.ShiftRight||T.run,sp=(run?9:5)*(fwd<0?.6:1)*Math.max(-1,Math.min(1,fwd));
+  P.pos.x+=Math.sin(P.rot)*sp*dt;P.pos.z+=Math.cos(P.rot)*sp*dt;
+  const dd=Math.hypot(P.pos.x,P.pos.z);if(dd>WORLD){P.pos.x*=WORLD/dd;P.pos.z*=WORLD/dd}
+  for(const t of trees){if(!t.alive)continue;const dx=P.pos.x-t.x,dz=P.pos.z-t.z,d=Math.hypot(dx,dz),r=.9*t.s;if(d<r){P.pos.x=t.x+dx/d*r;P.pos.z=t.z+dz/d*r}}
+  if(Math.abs(sp)>.1){P.ph+=dt*(run?14:9);camOff*=1-Math.min(1,1.5*dt)}
+  const u=hero.userData,sw=Math.abs(sp)>.1?Math.sin(P.ph)*(run?.95:.7):0;
+  u.lL.rotation.x=sw;u.lR.rotation.x=-sw;u.aL.rotation.x=-sw;
+  if(P.atk>=0){P.atk+=dt/.38;const k=Math.sin(Math.min(1,P.atk)*Math.PI);u.aR.rotation.x=-2.4*k+.2;
+   if(P.atk>.45&&!P.hit){P.hit=true;doHit()}if(P.atk>=1){P.atk=-1;u.aR.rotation.x=0}}
+  else u.aR.rotation.x=sw;
+  hero.position.set(P.pos.x,Math.abs(Math.sin(P.ph))*.08*(Math.abs(sp)>.1),P.pos.z);hero.rotation.y=P.rot;
+  // wolves
+  const night=ct>=DAY;
+  for(const w of wolves){
+   const g=w.g,dx=P.pos.x-g.position.x,dz=P.pos.z-g.position.z,d=Math.hypot(dx,dz);
+   w.cd-=dt;
+   if(d>1.4){const s=night?4.6:0;g.position.x+=dx/d*s*dt;g.position.z+=dz/d*s*dt;w.ph+=dt*13}
+   else if(w.cd<=0){w.cd=1.1;P.hp-=10;ui();$('flash').style.opacity=1;setTimeout(()=>$('flash').style.opacity=0,180);
+    if(P.hp<=0){$('stat').textContent='Вы пережили ночей: '+(dayNo-(ct>=DAY?0:1))+' · Убито волков: '+P.kills+' · Древесины: '+P.wood;$('dead').style.display='flex';document.exitPointerLock&&document.exitPointerLock()}}
+   g.rotation.y=Math.atan2(dx,dz);g.position.y=Math.abs(Math.sin(w.ph))*.12;
+   g.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(w.ph+(i%2?Math.PI:0))*.8);
+  }
+ }
+ // trees anim
+ for(const t of trees){
+  if(t.shake>0){t.shake-=dt;t.g.rotation.z=Math.sin(t.shake*60)*.05}else if(t.alive)t.g.rotation.z=0;
+  if(t.fall>0&&t.g.visible){t.fall+=dt;t.g.rotation.z=Math.min(1.5,t.fall*3);t.g.scale.setScalar(t.s*Math.max(0,1-t.fall*.9));if(t.fall>1.1)t.g.visible=false}
+ }
+ clouds.forEach(c=>{c.position.x+=dt*.8;if(c.position.x>100)c.position.x=-100});
+ // camera
+ const yaw=P.rot+camOff,cp=Math.cos(camPitch),dist=7.5;
+ cam.position.set(P.pos.x-Math.sin(yaw)*cp*dist,Math.sin(camPitch)*dist+1.5,P.pos.z-Math.cos(yaw)*cp*dist);
+ cam.position.y=Math.max(.6,cam.position.y);cam.lookAt(P.pos.x,1.8,P.pos.z);
+ sun.position.set(P.pos.x+30,50,P.pos.z+20);sun.target.position.copy(P.pos);
+ renderer.render(scene,cam);
+}
+ui();loop();
+</script></body></html>
